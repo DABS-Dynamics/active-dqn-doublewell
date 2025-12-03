@@ -1,85 +1,196 @@
-# **Active-Learning-Driven Deep Q-Network (Active DQN)**
+# **Active-Learning DQN for PES Optimization**
 
-**Discovers the Global Minimum of a 3D Double-Well Potential with Extreme Data Efficiency**
+### **v1 → v2 → v3 Evolution: From Single-Surrogate RL to Ensemble-Stabilized Active Learning**
 
-## **📌 Overview**
+This repository contains the full development history of an active-learning reinforcement-learning engine designed to navigate **nonconvex potential energy surfaces (PES)** with extreme data efficiency.
 
-This repository contains the implementation of a discrete-action **Deep Q-Network (DQN)** guided by an uncertainty-aware **Neural Force Field (NFF)**.
+The system evolves through **three versions**:
 
-The agent successfully navigates a rugged, non-convex **3D Isotropic Double-Well Potential** ($E(\\mathbf{r}) \= \\sum (r\_i^4 \- r\_i^2)$) to find the global minimum. By utilizing an Active Learning scheme, the system requests high-fidelity "Quantum Mechanical" (QM) evaluations **only when uncertainty is high**.
+* **v1 — Single surrogate, 1 PES, bounded success.**
+* **v2 — Multi-PES stress test reveals catastrophic OOD collapse.**
+* **v3 — Ensemble uncertainty + OOD guard fixes the failure and stabilizes all PES.**
 
-**Key Result:** The agent learns the physics within the first 200 steps (1 episode) and solves the optimization problem for the remaining 39 episodes with **zero additional oracle calls**.
+The latest version (v3) achieves **96–97% oracle savings** across all evaluated potentials.
 
-## **🚀 Key Features**
+---
 
-* **Discrete Action Space:** The agent moves in small discrete steps ($\\pm 0.08$) along Cartesian axes, avoiding the complexity of continuous control.  
-* **Uncertainty-Driven Active Learning:** A neural surrogate model estimates its own epistemic uncertainty. The expensive "ground truth" function is only called when this uncertainty exceeds a threshold ($u \> 0.25$).  
-* **Non-Convex Optimization:** Solves a "W"-shaped potential with local traps and high-energy barriers, proving robustness beyond simple harmonic oscillators.  
-* **Extreme Efficiency:** Solves the environment using only **199 exact evaluations** out of 8,000 total steps (97.5% data efficiency).
+# **🔥 What This Repo Demonstrates**
 
-## **🛠️ Installation**
+### A discrete-action Deep Q-Network (DQN) can solve rugged PES landscapes while calling the true oracle only when absolutely necessary.
 
-1. Clone the repository:  
-   git clone \[https://github.com/StonerIsh420/active-dqn-doublewell.git\](https://github.com/StonerIsh420/active-dqn-doublewell.git)  
-   cd active-dqn-doublewell
+Across 40×200-step episodes, the system uses only:
 
-2. Install dependencies (TensorFlow, NumPy, Matplotlib):  
-   pip install tensorflow numpy matplotlib
+* **200 QM calls** on the symmetric double-well
+* **224 QM calls** on the rugged double-well
+* **299 QM calls** on the asymmetric tilted double-well
 
-   *Note: The code includes a compatibility fix for Python 3.13+.*
+A full run would normally require **8000 exact evaluations**.
 
-## **💻 Usage**
+---
 
-Run the main training script. This will train the DQN, perform active learning, and generate the reward plot.
+# **📘 Version History (v1 → v2 → v3)**
 
-python ALD\_DQND.py
+## **v1 — Single Surrogate Succeeds (But Only on Bounded PES)**
 
-**Output:**
+* One Neural Force Field (NFF) guides the DQN.
+* Only 199 QM calls used.
+* Works on the symmetric 3D double-well.
+* Appears “solved”… until larger tests reveal the flaw.
 
-* Real-time logs of Episode Reward, Epsilon, and Total QM Calls.  
-* A generated plot file: ![Output Plot](plot/reward_curve_example.png).
+**Figure (v1):**
+![v1](plot/reward_curve_v1.png)
 
-## **🔬 The Physics**
+---
 
-The environment simulates a particle in a 3D Isotropic Double-Well potential. Unlike a simple bowl (Harmonic Oscillator), this potential has local maxima (barriers) and multiple minima.
+## **v2 — Multi-Potential Testing Exposes the Fatal Flaw**
 
-The Equation:
+v2 runs the same agent on three PES types:
 
-$$E(\\mathbf{r}) \= \\sum\_{i \\in \\{x,y,z\\}} (r\_i^4 \- r\_i^2)$$
+1. Symmetric double-well
+2. Asymmetric tilted double-well (unbounded on one side)
+3. Rugged double-well (sinusoidal roughness)
 
-* **Global Minima:** Located at $r\_i \\approx \\pm 0.707$ for each axis.  
-* **Global Minimum Energy:** $-0.75$  
-* **Max Possible Reward:** $150.0$ (over 200 steps).
+The asymmetric PES causes **catastrophic surrogate overconfidence**:
 
-## **📊 Results Summary**
+* Surrogate confidently predicts wrong values
+* No uncertainty spike → no QM correction
+* Rewards crash below **−80,000**
 
-| Metric | Value | Note |
-| :---- | :---- | :---- |
-| **Total Episodes** | 40 | 200 steps each |
-| **Total QM Calls** | **199** | **Plateaus after Episode 1** |
-| **Convergence Reward** | \~129 | \~85% of Theoretical Max |
-| **Success Rate** | 100% | Found global minimum in all late episodes |
+**Figure (v2):**
+![v2](plot/reward_curves_v2.png)
 
-For a detailed breakdown, refer to the output log file. 
-![Run Ouput](run_output/run_results.sh)
+This reveals that **single-surrogate RL is unsafe** on real chemistry landscapes.
 
-## **📄 Citation**
+---
 
-If you use this code or methodology in your research, please cite the accompanying paper:
+## **v3 — Ensemble Epistemic Uncertainty + OOD Guard (Fixes Everything)**
 
-@article{Stoner2025ActiveDQN,  
-  title={Active-Learning-Driven Deep Q-Network Discovers the Global Minimum of a 3D Double-Well Potential Using Only Discrete Actions and 199 High-Fidelity Evaluations},  
-  author={Stoner},  
-  journal={Independent Research},  
-  year={2025},  
-  month={December}  
+v3 introduces two key stabilizers:
+
+1. **Five-model NFF ensemble**
+
+   * Epistemic uncertainty = prediction disagreement
+   * Correctly identifies OOD states
+2. **Radial OOD Guard**
+
+   * If ‖r‖ > 2.8 → force QM evaluation to avoid collapse
+
+This combination **completely eliminates v2 failures**.
+
+**Figure (v3):**
+![v3](plot/reward_curves_v3.png)
+
+v3 can **recover** from negative reward dips and steer back to optimal regions—
+a capability that v1/v2 completely lacked.
+
+---
+
+# **📄 Paper (Updated v1 → v2 → v3 Story)**
+
+The full versioned paper is included here:
+
+**`active-dqn-doublewell.pdf`**
+
+It explains the scientific story behind the three versions, the discoveries along the way, and why v3 finally becomes robust enough for real PES optimization.
+
+You can cite it using:
+
+```bibtex
+@article{DABSDynamics2025ActiveDQN,
+  title={From Single-Surrogate RL to Ensemble-Stabilized Active Learning: 
+         A Versioned Journey Toward Robust PES Optimization with 96--97\% Oracle Savings},
+  author={Stoner},
+  journal={Independent Research},
+  year={2025},
+  month={December}
 }
+```
 
-## **🙌 Acknowledgments**
+---
 
-* **Grok (xAI) & Gemini (Google):** For extensive assistance in code debugging, manuscript refinement, and ensuring strict alignment between the implementation and the text.  
-* **Original Concept:** The conceptual framework and research design are the sole work of the author.
+# **📦 Repository Structure**
 
-## **📜 License**
+```
+active-dqn-doublewell/
+│
+├── ALD_DQND.py          # Version 1 (single surrogate)
+├── ALD_DQND_v2.py       # Version 2 (multi-PES testing)
+├── ALD_DQND_v3.py       # Version 3 (ensemble + OOD guard)
+│
+├── reward_curve_v1.png
+├── reward_curves_v2.png
+├── reward_curves_v3.png
+│
+├── active-dqn-doublewell.pdf   # Full paper (v1 → v2 → v3)
+├── refs.bib                    # References for the PDF
+│
+└── LICENSE
+```
 
-This project is licensed under the MIT License \- see the LICENSE file for details.
+---
+
+# **⚙️ Installation**
+
+```bash
+git clone https://github.com/StonerIsh420/active-dqn-doublewell.git
+cd active-dqn-doublewell
+pip install tensorflow numpy matplotlib
+```
+
+Python 3.13 compatibility fixes are included.
+
+---
+
+# **🚀 Running the Models**
+
+### **v1:**
+
+```bash
+python ALD_DQND.py
+```
+
+### **v2:**
+
+```bash
+python ALD_DQND_v2.py
+```
+
+### **v3 (recommended):**
+
+```bash
+python ALD_DQND_v3.py
+```
+
+Each script logs:
+
+* Episode Reward
+* Exploration ε
+* Total QM Calls
+* Surrogate vs Oracle usage
+
+And writes the reward curves to `.png`.
+
+---
+
+# **🧠 Scientific Summary**
+
+| Version | Strength                               | Weakness                  | Status                  |
+| ------- | -------------------------------------- | ------------------------- | ----------------------- |
+| **v1**  | Works on bounded PES                   | Unrealistic for chemistry | ✔️ Good baseline        |
+| **v2**  | Multi-PES test suite                   | Catastrophic OOD collapse | ❌ Fatal flaw found      |
+| **v3**  | Ensemble uncertainty, recovery-capable | Slightly more QM calls    | ⭐ **Robust + reliable** |
+
+---
+
+# **📬 Acknowledgments**
+
+Thanks to **Grok (xAI)** and **Gemini (Google)** for debugging assistance and refinement support.
+All conceptual design originates solely from the author.
+
+---
+
+# **📜 License**
+
+MIT License. See `LICENSE`.
+
+---
