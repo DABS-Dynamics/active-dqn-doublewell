@@ -113,16 +113,16 @@ You can cite it using:
 ```
 active-dqn-doublewell/
 │
-├── ALD_DQND.py          # Version 1 (single surrogate)
-├── ALD_DQND_v2.py       # Version 2 (multi-PES testing)
-├── ALD_DQND_v3.py       # Version 3 (ensemble + OOD guard)
+├── code/ALD_DQND.py          # Version 1 (single surrogate)
+├── code/ALD_DQND_v2.py       # Version 2 (multi-PES testing)
+├── code/ALD_DQND_v3.py       # Version 3 (ensemble + OOD guard)
 │
-├── reward_curve_v1.png
-├── reward_curves_v2.png
-├── reward_curves_v3.png
+├── plot/reward_curve_v1.png
+├── plot/reward_curves_v2.png
+├── plot/reward_curves_v3.png
 │
-├── active-dqn-doublewell.pdf   # Full paper (v1 → v2 → v3)
-├── refs.bib                    # References for the PDF
+├── paper/active-dqn-doublewell.pdf   # Full paper (v1 → v2 → v3)
+├── paper/refs.bib                    # References for the PDF
 │
 └── LICENSE
 ```
