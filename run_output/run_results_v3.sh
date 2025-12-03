@@ -137,3 +137,10 @@ Ep       Reward       ε     QM
 38        48.10   0.010    223
 39       184.41   0.010    223
 40       173.81   0.010    224
+
+=== Summary of QM call savings vs. naive baseline ===
+Baseline (no active learning): 8000 QM calls per potential
+
+double_well | QM calls = 200 | saved = 97.50% vs baseline
+asymmetric  | QM calls = 299 | saved = 96.26% vs baseline
+rugged      | QM calls = 224 | saved = 97.20% vs baseline
